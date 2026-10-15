@@ -1,0 +1,16 @@
+<resources>
+    <!-- Zeigt die SpO2-Kurve (Entwickler-Feld id 0) in Garmin Connect.
+         Falls der Compiler diese Datei beanstandet: Datei loeschen, die Werte
+         stehen trotzdem in der FIT-Datei. -->
+    <fitContributions>
+        <fitField
+            id="0"
+            displayInChart="true"
+            sortOrder="0"
+            precision="0"
+            chartTitle="@Strings.SpO2Title"
+            dataLabel="@Strings.SpO2Label"
+            unitLabel="@Strings.PercentUnit"
+            fillColor="#0099FF" />
+    </fitContributions>
+</resources>

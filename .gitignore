@@ -1,0 +1,10 @@
+bin/
+gen/
+*.prg
+*.iq
+*.fit
+*.fit.json
+.DS_Store
+developer_key*
+*.der
+*.pem

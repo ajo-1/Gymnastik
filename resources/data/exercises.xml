@@ -1,0 +1,16 @@
+<resources>
+    <!-- Reihenfolge = Reihenfolge im Training. Namen max. ca. 20 Zeichen
+         (Limit des FIT-Textfelds). -->
+    <jsonData id="Exercises">[
+        "Armkreisen",
+        "Hampelmänner",
+        "Kniebeugen",
+        "Ausfallschritte",
+        "Liegestütze",
+        "Sit-ups",
+        "Rumpfdrehen",
+        "Plank",
+        "Brücke",
+        "Dehnen"
+    ]</jsonData>
+</resources>

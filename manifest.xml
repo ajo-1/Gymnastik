@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="1">
+    <iq:application entry="GymApp" id="6c3e25d0-f1ee-4acb-bcbb-e10ba0b1ef9b" launcherIcon="@Drawables.LauncherIcon" minSdkVersion="3.3.0" name="@Strings.AppName" type="watch-app">
+        <iq:products>
+            <iq:product id="venu441mm"/>
+            <iq:product id="venu445mm"/>
+        </iq:products>
+        <iq:permissions>
+            <iq:uses-permission id="Fit"/>
+            <iq:uses-permission id="FitContributor"/>
+            <iq:uses-permission id="Sensor"/>
+            <iq:uses-permission id="SensorHistory"/>
+            <iq:uses-permission id="UserProfile"/>
+        </iq:permissions>
+        <iq:languages>
+            <iq:language>deu</iq:language>
+            <iq:language>eng</iq:language>
+        </iq:languages>
+        <iq:barrels/>
+    </iq:application>
+</iq:manifest>
