@@ -1,5 +1,6 @@
 <resources>
-    <!-- Zeigt die SpO2-Kurve (Entwickler-Feld id 0) in Garmin Connect.
+    <!-- Zeigt SpO2 (Entwickler-Feld id 0) und VO2max (id 3) in Garmin Connect.
+         Atmung und Stress zeichnet die Uhr beim Typ Yoga selbst auf.
          Falls der Compiler diese Datei beanstandet: Datei loeschen, die Werte
          stehen trotzdem in der FIT-Datei. -->
     <fitContributions>
@@ -13,27 +14,9 @@
             unitLabel="@Strings.PercentUnit"
             fillColor="#0099FF" />
         <fitField
-            id="1"
-            displayInChart="true"
-            sortOrder="1"
-            precision="0"
-            chartTitle="@Strings.RespTitle"
-            dataLabel="@Strings.RespLabel"
-            unitLabel="@Strings.RespUnit"
-            fillColor="#33CC99" />
-        <fitField
-            id="2"
-            displayInChart="true"
-            sortOrder="2"
-            precision="0"
-            chartTitle="@Strings.StressTitle"
-            dataLabel="@Strings.StressLabel"
-            unitLabel="@Strings.NoUnit"
-            fillColor="#FF9922" />
-        <fitField
             id="3"
             displayInChart="true"
-            sortOrder="3"
+            sortOrder="1"
             precision="0"
             chartTitle="@Strings.Vo2Title"
             dataLabel="@Strings.Vo2Label"

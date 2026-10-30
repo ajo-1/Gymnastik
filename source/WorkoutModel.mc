@@ -54,8 +54,6 @@ class WorkoutModel {
     // --- intern ---
     var session as ActivityRecording.Session? = null;
     var spo2Field as FitContributor.Field? = null;
-    var respField as FitContributor.Field? = null;
-    var stressField as FitContributor.Field? = null;
     var vo2Field as FitContributor.Field? = null;
     var timer as Timer.Timer? = null;
     var tickCount as Number = 0;
@@ -248,18 +246,10 @@ class WorkoutModel {
             if (spo2Field != null && spo2IsFresh()) {
                 spo2Field.setData(spo2);
             }
-            // Atemfrequenz und Stress (letzter bekannter Wert) ebenfalls in die Aktivitaet schreiben
-            var rv = slow["resp"];
-            if (respField != null && rv != null) {
-                respField.setData((rv as Numeric).toNumber());
-            }
+            // Atmung und Stress zeichnet die Uhr beim Typ Yoga selbst auf; hier nur VO2max zusaetzlich
             var vo = Fields.vo2max();
             if (vo2Field != null && vo != null) {
                 vo2Field.setData(vo.toNumber());
-            }
-            var sv = slow["stress"];
-            if (stressField != null && sv != null) {
-                stressField.setData((sv as Numeric).toNumber());
             }
         }
         WatchUi.requestUpdate();
@@ -312,14 +302,6 @@ class WorkoutModel {
         spo2Field = s.createField("SpO2", 0, FitContributor.DATA_TYPE_UINT8, {
             :mesgType => FitContributor.MESG_TYPE_RECORD,
             :units => "%"
-        });
-        respField = s.createField("Atemfrequenz", 1, FitContributor.DATA_TYPE_UINT8, {
-            :mesgType => FitContributor.MESG_TYPE_RECORD,
-            :units => "/min"
-        });
-        stressField = s.createField("Stress", 2, FitContributor.DATA_TYPE_UINT8, {
-            :mesgType => FitContributor.MESG_TYPE_RECORD,
-            :units => ""
         });
         vo2Field = s.createField("VO2max", 3, FitContributor.DATA_TYPE_UINT8, {
             :mesgType => FitContributor.MESG_TYPE_RECORD,
@@ -381,8 +363,6 @@ class WorkoutModel {
 
         session = null;
         spo2Field = null;
-        respField = null;
-        stressField = null;
         vo2Field = null;
         recording = false;
         paused = false;
