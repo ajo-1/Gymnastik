@@ -12,5 +12,32 @@
             dataLabel="@Strings.SpO2Label"
             unitLabel="@Strings.PercentUnit"
             fillColor="#0099FF" />
+        <fitField
+            id="1"
+            displayInChart="true"
+            sortOrder="1"
+            precision="0"
+            chartTitle="@Strings.RespTitle"
+            dataLabel="@Strings.RespLabel"
+            unitLabel="@Strings.RespUnit"
+            fillColor="#33CC99" />
+        <fitField
+            id="2"
+            displayInChart="true"
+            sortOrder="2"
+            precision="0"
+            chartTitle="@Strings.StressTitle"
+            dataLabel="@Strings.StressLabel"
+            unitLabel="@Strings.NoUnit"
+            fillColor="#FF9922" />
+        <fitField
+            id="3"
+            displayInChart="true"
+            sortOrder="3"
+            precision="0"
+            chartTitle="@Strings.Vo2Title"
+            dataLabel="@Strings.Vo2Label"
+            unitLabel="@Strings.NoUnit"
+            fillColor="#CC66FF" />
     </fitContributions>
 </resources>

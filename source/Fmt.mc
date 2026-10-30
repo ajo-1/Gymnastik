@@ -1,6 +1,13 @@
 import Toybox.Lang;
+import Toybox.System;
 
 module Fmt {
+
+    // Aktuelle Uhrzeit "hh:mm" (24 Stunden)
+    function timeOfDay() as String {
+        var t = System.getClockTime();
+        return t.hour.format("%02d") + ":" + t.min.format("%02d");
+    }
 
     // Millisekunden -> "mm:ss" bzw. "h:mm:ss"
     function clock(ms as Number) as String {

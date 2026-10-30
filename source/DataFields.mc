@@ -3,6 +3,7 @@ import Toybox.ActivityMonitor;
 import Toybox.Application;
 import Toybox.Lang;
 import Toybox.System;
+import Toybox.UserProfile;
 
 // Auswaehlbare Datenfelder. Jedes der 6 Felder auf dem Display ("Slots")
 // zeigt eines dieser Felder; die Auswahl wird auf der Uhr gespeichert.
@@ -17,8 +18,9 @@ module Fields {
     // Obergrenze fuer den automatischen Seitenwechsel (Sekunden)
     const PAGE_SEC_MAX = 120;
 
-    // Voreinstellung: Seite 1 = SpO2, Kalorien; Seite 2 = Ø Puls, Max Puls, Atmung, Stress
-    const DEFAULTS = [0, 1, 2, 3, 6, 7];
+    // Voreinstellung: Seite 1 = SpO2, Kalorien; Seite 2 = Ø Puls, Max Puls, Puls %Max, Stress
+    // (Atmung (6) liefert die Venu 4 im Training nicht zuverlaessig, daher nicht voreingestellt)
+    const DEFAULTS = [0, 1, 2, 3, 4, 7];
 
     const LABELS = [
         "SpO2",           // 0
@@ -35,7 +37,8 @@ module Fields {
         "Uhrzeit",        // 11
         "Akku",           // 12
         "Höhe",           // 13
-        "Erholung"        // 14
+        "Erholung",       // 14
+        "VO2max"          // 15
     ];
 
     function count() as Number {
@@ -95,6 +98,10 @@ module Fields {
         if (v == null) {
             return "--";
         }
+        // Historienwerte koennen Float sein: fuer "%d" vorher in eine ganze Zahl wandeln
+        if (fmt.equals("%d")) {
+            return v.toNumber().format("%d") + suffix;
+        }
         return v.format(fmt) + suffix;
     }
 
@@ -123,11 +130,7 @@ module Fields {
             var info = ActivityMonitor.getInfo();
             return numStr(info.steps, "%d", "");
         } else if (id == 6) {
-            var info = ActivityMonitor.getInfo();
-            if (info has :respirationRate) {
-                return numStr(info.respirationRate, "%d", "");
-            }
-            return "--";
+            return numStr(m.slow["resp"] as Numeric?, "%d", "");
         } else if (id == 7) {
             return numStr(m.slow["stress"] as Numeric?, "%d", "");
         } else if (id == 8) {
@@ -154,7 +157,21 @@ module Fields {
                 return numStr(info.timeToRecovery, "%d", " h");
             }
             return "--";
+        } else if (id == 15) {
+            return numStr(vo2max(), "%d", "");
         }
         return "--";
+    }
+
+    // VO2max aus dem Uhrenprofil (Laufen, sonst Radfahren); null wenn die Uhr keinen Wert hat
+    function vo2max() as Number? {
+        var p = UserProfile.getProfile();
+        if ((p has :vo2maxRunning) && p.vo2maxRunning != null) {
+            return p.vo2maxRunning;
+        }
+        if ((p has :vo2maxCycling) && p.vo2maxCycling != null) {
+            return p.vo2maxCycling;
+        }
+        return null;
     }
 }

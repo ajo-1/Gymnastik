@@ -20,6 +20,10 @@ START/STOP- oder BACK-Taste öffnet das Menü: Pause, Speichern und beenden, Ver
 Im Menü *Datenfelder* ein Feld wählen und dann die Größe aus der Liste: SpO2, Kalorien, Ø Puls,
 Max Puls, Puls %Max, Schritte, Atmung, Stress, Body Battery, Temperatur, Training-Effekt,
 Uhrzeit, Akku, Höhe, Erholung. Die Auswahl bleibt auf der Uhr gespeichert.
+
+Unter Feld 6 steht **Seitenwechsel**: dort stellst du in Sekunden ein (0 bis 120), wie oft die Seiten 1 und 2
+automatisch wechseln. **0 = nur manuell** (Antippen/Wischen). Der Wechsel läuft nur während der laufenden
+Aufzeichnung, nicht in der Pause.
 Auch vor dem Start einstellbar (Menü-Taste/Display halten auf dem Startbildschirm).
 
 Eigene Felder ergänzen: in `source/DataFields.mc` Bezeichnung an `LABELS` anhängen und in
@@ -52,3 +56,13 @@ Für den Connect-IQ-Store (Entwickler-Dashboard) wird statt der `.prg` ein `.iq`
 - Der Code wurde ohne Compiler geschrieben und noch nicht auf einer Uhr getestet. Falls der Build
   eine Meldung ausgibt, bitte hier melden. Mögliche Stellschrauben: `resources/data/fitcontributions.xml`
   löschen (nur für die SpO2-Kurve in Garmin Connect) oder die Produkt-ID korrigieren.
+
+## Bekannte Probleme der Venu 4
+
+- **Neustart der Uhr im Training:** Auf der Venu 4 mit Firmware 18.30/18.32 melden Entwickler im Garmin-Forum
+  zufällige Neustarts bei Connect-IQ-Apps, die den Puls über den Sensor-Listener lesen. Deshalb liest die App
+  Puls und SpO2 während der Aufzeichnung nur über `Activity.getActivityInfo()`. Ein Listener läuft nur auf dem
+  Startbildschirm. Ob Garmin das Problem bestätigt oder behoben hat, ist offen.
+- **Display wird dunkler:** Die App ruft jede Sekunde `Attention.backlight(true)` auf. Auf AMOLED-Uhren begrenzt der
+  Einbrennschutz das, die App kann den Energiesparmodus nicht dauerhaft verhindern. Im Energiesparmodus zeigt die
+  App nur Puls (Zonenfarbe) und Zeit. Die Dauer stellst du in den Uhren-Einstellungen (Anzeige) ein.

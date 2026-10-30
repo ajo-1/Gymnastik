@@ -12,6 +12,16 @@ class WorkoutView extends WatchUi.View {
         View.initialize();
     }
 
+    function onEnterSleep() as Void {
+        getModel().sleeping = true;
+        WatchUi.requestUpdate();
+    }
+
+    function onExitSleep() as Void {
+        getModel().sleeping = false;
+        WatchUi.requestUpdate();
+    }
+
     function onUpdate(dc as Dc) as Void {
         var m = getModel();
         var w = dc.getWidth();
@@ -25,6 +35,17 @@ class WorkoutView extends WatchUi.View {
         var zone = m.hrZone(hr);
         var zoneColor = ZONE_COLORS[zone] as Number;
 
+        // Energiesparmodus der Uhr (AMOLED-Einbrennschutz): nur wenige Pixel, nur das Wichtigste
+        if (m.sleeping) {
+            dc.setColor(zoneColor, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(w / 2, Fmt.px(0.45, h), Graphics.FONT_NUMBER_MEDIUM,
+                (hr != null) ? hr.format("%d") : "--", c);
+            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(w / 2, Fmt.px(0.27, h), Graphics.FONT_SMALL, Fmt.timeOfDay(), c);
+            dc.drawText(w / 2, Fmt.px(0.64, h), Graphics.FONT_SMALL, Fmt.clock(m.totalMs), c);
+            return;
+        }
+
         // Ring in Pulsbereichsfarbe (gelb waehrend Pause)
         dc.setPenWidth(8);
         dc.setColor(m.paused ? 0xFFDD00 : zoneColor, Graphics.COLOR_TRANSPARENT);
@@ -33,9 +54,17 @@ class WorkoutView extends WatchUi.View {
         // Gesamtzeit oben
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(w / 2, Fmt.px(0.14, h), Graphics.FONT_MEDIUM, Fmt.clock(m.totalMs), c);
+
+        // Uhrzeit auf beiden Seiten; in der Pause steht "PAUSE" links daneben
+        var clockY = Fmt.px(0.245, h);
         if (m.paused) {
             dc.setColor(0xFFDD00, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(w / 2, Fmt.px(0.24, h), Graphics.FONT_XTINY, "PAUSE", c);
+            dc.drawText(Fmt.px(0.36, w), clockY, Graphics.FONT_XTINY, "PAUSE", c);
+            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(Fmt.px(0.64, w), clockY, Graphics.FONT_XTINY, Fmt.timeOfDay(), c);
+        } else {
+            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(w / 2, clockY, Graphics.FONT_XTINY, Fmt.timeOfDay(), c);
         }
 
         if (m.page == 0) {
@@ -86,7 +115,7 @@ class WorkoutView extends WatchUi.View {
 
         dc.setColor(zoneColor, Graphics.COLOR_TRANSPARENT);
         var hrText = (hr != null) ? hr.format("%d") : "--";
-        dc.drawText(w / 2, Fmt.px(0.31, h), Graphics.FONT_LARGE, hrText + " bpm", c);
+        dc.drawText(w / 2, Fmt.px(0.34, h), Graphics.FONT_LARGE, hrText + " bpm", c);
 
         drawField(dc, m, 2, Fmt.px(0.30, w), Fmt.px(0.50, h), Graphics.FONT_MEDIUM);
         drawField(dc, m, 3, Fmt.px(0.70, w), Fmt.px(0.50, h), Graphics.FONT_MEDIUM);
@@ -138,41 +167,38 @@ class WorkoutView extends WatchUi.View {
     }
 }
 
-class WorkoutDelegate extends WatchUi.BehaviorDelegate {
+// InputDelegate statt BehaviorDelegate: ein Antippen des Displays wird nie als
+// "Auswahl" gewertet und oeffnet deshalb nicht das Menue.
+//   obere Taste  = Menue (Pause / Speichern / Verwerfen / Datenfelder)
+//   untere Taste = naechste Seite
+//   nach oben/unten wischen = andere Seite, Antippen = nichts
+class WorkoutDelegate extends WatchUi.InputDelegate {
 
     function initialize() {
-        BehaviorDelegate.initialize();
+        InputDelegate.initialize();
     }
 
-    // START/STOP-Taste, BACK-Taste oder Menue = Menue (Pause / Datenfelder / Speichern / Verwerfen)
-    function onSelect() as Boolean {
-        openWorkoutMenu();
+    function onKey(evt as WatchUi.KeyEvent) as Boolean {
+        var k = evt.getKey();
+        if (k == WatchUi.KEY_ENTER || k == WatchUi.KEY_MENU) {
+            openWorkoutMenu();
+            return true;
+        } else if (k == WatchUi.KEY_ESC) {
+            getModel().togglePage();
+            return true;
+        }
+        return false;
+    }
+
+    function onSwipe(evt as WatchUi.SwipeEvent) as Boolean {
+        var d = evt.getDirection();
+        if (d == WatchUi.SWIPE_UP || d == WatchUi.SWIPE_DOWN) {
+            getModel().togglePage();
+        }
         return true;
     }
 
-    function onMenu() as Boolean {
-        openWorkoutMenu();
-        return true;
-    }
-
-    function onBack() as Boolean {
-        openWorkoutMenu();
-        return true;
-    }
-
-    // Display antippen, nach oben/unten wischen oder Auf/Ab-Taste = andere Seite
     function onTap(evt as WatchUi.ClickEvent) as Boolean {
-        getModel().togglePage();
-        return true;
-    }
-
-    function onNextPage() as Boolean {
-        getModel().togglePage();
-        return true;
-    }
-
-    function onPreviousPage() as Boolean {
-        getModel().togglePage();
         return true;
     }
 }

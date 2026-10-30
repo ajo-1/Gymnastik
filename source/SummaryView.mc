@@ -30,8 +30,8 @@ class SummaryView extends WatchUi.View {
         dc.drawText(w / 2, Fmt.px(0.56, h), Graphics.FONT_SMALL,
             m.sumKcal.format("%d") + " kcal", c);
 
-        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(w / 2, Fmt.px(0.84, h), Graphics.FONT_XTINY, "Taste drücken = Beenden", c);
+        // obere Taste (gruenes Dreieck) = Beenden
+        drawKeyHints(dc, true, false);
     }
 }
 

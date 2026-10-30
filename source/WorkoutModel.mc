@@ -1,5 +1,7 @@
 import Toybox.Activity;
+import Toybox.ActivityMonitor;
 import Toybox.ActivityRecording;
+import Toybox.Attention;
 import Toybox.FitContributor;
 import Toybox.Lang;
 import Toybox.Sensor;
@@ -30,6 +32,9 @@ class WorkoutModel {
     var avgHr as Number = 0;
     var maxHr as Number = 0;
 
+    // true, solange die Uhr im Energiesparmodus (gedimmtes Display) ist
+    var sleeping as Boolean = false;
+
     // Anzeigeseite im Training: 0 = Hauptseite, 1 = Datenfelder-Seite
     var page as Number = 0;
 
@@ -49,6 +54,9 @@ class WorkoutModel {
     // --- intern ---
     var session as ActivityRecording.Session? = null;
     var spo2Field as FitContributor.Field? = null;
+    var respField as FitContributor.Field? = null;
+    var stressField as FitContributor.Field? = null;
+    var vo2Field as FitContributor.Field? = null;
     var timer as Timer.Timer? = null;
     var tickCount as Number = 0;
     var zones as Array<Number>? = null;
@@ -117,28 +125,55 @@ class WorkoutModel {
         }
     }
 
+    // Neuester Messwert aus den letzten 5 Historien-Eintraegen (Eintraege ohne Wert werden uebersprungen)
     function latestSample(it as SensorHistory.SensorHistoryIterator?) as Numeric? {
         if (it == null) {
             return null;
         }
-        var s = it.next();
-        return (s != null) ? s.data : null;
+        for (var i = 0; i < 5; i += 1) {
+            var s = it.next();
+            if (s == null) {
+                return null;
+            }
+            if (s.data != null) {
+                return s.data;
+            }
+        }
+        return null;
     }
 
-    // Stress, Body Battery und Temperatur aus der Historie der Uhr
+    // Stress, Atmung, Body Battery und Temperatur. Die Uhr misst Stress und Atmung
+    // in Bewegung kaum, deshalb merken wir uns den letzten bekannten Wert.
     function refreshSlow() as Void {
+        var info = ActivityMonitor.getInfo();
+        if ((info has :respirationRate) && info.respirationRate != null) {
+            slow["resp"] = info.respirationRate;
+        }
+        if ((info has :stressScore) && info.stressScore != null) {
+            slow["stress"] = info.stressScore;
+        }
+
         if (!(Toybox has :SensorHistory)) {
             return;
         }
-        var opt = {:period => 1, :order => SensorHistory.ORDER_NEWEST_FIRST};
+        var opt = {:period => 5, :order => SensorHistory.ORDER_NEWEST_FIRST};
         if (SensorHistory has :getStressHistory) {
-            slow["stress"] = latestSample(SensorHistory.getStressHistory(opt));
+            var v = latestSample(SensorHistory.getStressHistory(opt));
+            if (v != null) {
+                slow["stress"] = v;
+            }
         }
         if (SensorHistory has :getBodyBatteryHistory) {
-            slow["bodyBattery"] = latestSample(SensorHistory.getBodyBatteryHistory(opt));
+            var v = latestSample(SensorHistory.getBodyBatteryHistory(opt));
+            if (v != null) {
+                slow["bodyBattery"] = v;
+            }
         }
         if (SensorHistory has :getTemperatureHistory) {
-            slow["temp"] = latestSample(SensorHistory.getTemperatureHistory(opt));
+            var v = latestSample(SensorHistory.getTemperatureHistory(opt));
+            if (v != null) {
+                slow["temp"] = v;
+            }
         }
     }
 
@@ -169,6 +204,12 @@ class WorkoutModel {
                 if (ai.currentHeartRate != null) {
                     hr = ai.currentHeartRate;
                 }
+                // SpO2 ebenfalls ueber Activity statt ueber einen Sensor-Listener
+                if ((ai has :currentOxygenSaturation) && ai.currentOxygenSaturation != null
+                        && ai.currentOxygenSaturation > 0) {
+                    spo2 = ai.currentOxygenSaturation;
+                    spo2When = Time.now();
+                }
                 if (ai.timerTime != null) {
                     totalMs = ai.timerTime;
                 }
@@ -185,6 +226,15 @@ class WorkoutModel {
         }
         currentHr = hr;
 
+        // Stress/Atmung/Body Battery/Temperatur alle 30 s auffrischen (auch vor dem Start)
+        if (tickCount % 30 == 1) {
+            refreshSlow();
+        }
+
+        if (recording) {
+            keepScreenOn();
+        }
+
         if (recording && !paused) {
             if (pageSec > 0) {
                 pageTick += 1;
@@ -194,10 +244,22 @@ class WorkoutModel {
             }
             if (tickCount % 30 == 0) {
                 refreshSpo2FromHistory();
-                refreshSlow();
             }
             if (spo2Field != null && spo2IsFresh()) {
                 spo2Field.setData(spo2);
+            }
+            // Atemfrequenz und Stress (letzter bekannter Wert) ebenfalls in die Aktivitaet schreiben
+            var rv = slow["resp"];
+            if (respField != null && rv != null) {
+                respField.setData((rv as Numeric).toNumber());
+            }
+            var vo = Fields.vo2max();
+            if (vo2Field != null && vo != null) {
+                vo2Field.setData(vo.toNumber());
+            }
+            var sv = slow["stress"];
+            if (stressField != null && sv != null) {
+                stressField.setData((sv as Numeric).toNumber());
             }
         }
         WatchUi.requestUpdate();
@@ -221,7 +283,23 @@ class WorkoutModel {
     // Training steuern
     // ------------------------------------------------------------------
 
+    // Display moeglichst hell halten. Auf AMOLED-Uhren begrenzt das System das
+    // (Einbrennschutz): dann wirft die Uhr eine Ausnahme, die wir ignorieren.
+    function keepScreenOn() as Void {
+        if ((Toybox has :Attention) && (Attention has :backlight)) {
+            try {
+                Attention.backlight(true);
+            } catch (ex) {
+                // Einbrennschutz greift: Display darf kurz dunkler werden
+            }
+        }
+    }
+
     function beginWorkout() as Void {
+        // Wichtig: Waehrend der Aufzeichnung KEINEN Sensor-Listener verwenden.
+        // Auf der Venu 4 (Firmware 18.30/18.32) fuehrt das laut Garmin-Forum zu
+        // Neustarts der Uhr. Puls und SpO2 kommen stattdessen aus Activity.getActivityInfo().
+        Sensor.enableSensorEvents(null);
         enableWorkoutSensors();
         refreshSpo2FromHistory();
         loadZones();
@@ -229,11 +307,23 @@ class WorkoutModel {
         var s = ActivityRecording.createSession({
             :name => "Gymnastik",
             :sport => Activity.SPORT_TRAINING,
-            :subSport => Activity.SUB_SPORT_STRENGTH_TRAINING
+            :subSport => Activity.SUB_SPORT_YOGA
         });
         spo2Field = s.createField("SpO2", 0, FitContributor.DATA_TYPE_UINT8, {
             :mesgType => FitContributor.MESG_TYPE_RECORD,
             :units => "%"
+        });
+        respField = s.createField("Atemfrequenz", 1, FitContributor.DATA_TYPE_UINT8, {
+            :mesgType => FitContributor.MESG_TYPE_RECORD,
+            :units => "/min"
+        });
+        stressField = s.createField("Stress", 2, FitContributor.DATA_TYPE_UINT8, {
+            :mesgType => FitContributor.MESG_TYPE_RECORD,
+            :units => ""
+        });
+        vo2Field = s.createField("VO2max", 3, FitContributor.DATA_TYPE_UINT8, {
+            :mesgType => FitContributor.MESG_TYPE_RECORD,
+            :units => ""
         });
         session = s;
         s.start();
@@ -291,6 +381,9 @@ class WorkoutModel {
 
         session = null;
         spo2Field = null;
+        respField = null;
+        stressField = null;
+        vo2Field = null;
         recording = false;
         paused = false;
         disableWorkoutSensors();

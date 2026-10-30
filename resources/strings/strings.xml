@@ -4,5 +4,13 @@
         <string id="SpO2Title">Sauerstoffsättigung</string>
         <string id="SpO2Label">SpO2</string>
         <string id="PercentUnit">%</string>
+        <string id="RespTitle">Atemfrequenz</string>
+        <string id="RespLabel">Atmung</string>
+        <string id="RespUnit">/min</string>
+        <string id="StressTitle">Stress</string>
+        <string id="StressLabel">Stress</string>
+        <string id="NoUnit"> </string>
+        <string id="Vo2Title">VO2max</string>
+        <string id="Vo2Label">VO2max</string>
     </strings>
 </resources>
